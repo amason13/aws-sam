@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform:
+- AWS::LanguageExtensions
+- AWS::Serverless-2016-10-31
+Description: Nested App to set up Cognito User Pool
+Parameters:
+  CognitoEmail:
+    Type: String
+  CognitoCallbackUrl:
+    Type: String
+  CognitoCompanyName:
+    Type: String
+Resources:
+  CognitoAuthorizerUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: cognito-user-pool-userpool
+      InviteMessageTemplate:
+        EmailSubject: email
+        EmailMessage: Your username is {username} and temporary password is {####}.
+      VerificationMessageTemplate:
+        EmailSubject: email
+        EmailMessage: The verification code is {####}.
+  CognitoAuthorizerUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlows:
+      - implicit
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+      - email
+      - openid
+      - profile
+      CallbackURLs:
+      - Ref: CognitoCallbackUrl
+      ClientName: cognito-user-pool-client
+      SupportedIdentityProviders:
+      - COGNITO
+      UserPoolId:
+        Ref: CognitoAuthorizerUserPool
+  CognitoAuthorizerUserPoolUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      UserAttributes:
+      - Name: email
+        Value:
+          Ref: CognitoEmail
+      Username:
+        Ref: CognitoEmail
+      UserPoolId:
+        Ref: CognitoAuthorizerUserPool
+  CognitoAuthorizerUserPoolResourceServer:
+    Type: AWS::Cognito::UserPoolResourceServer
+    Properties:
+      Identifier: com.apigw
+      Name: com.apigw
+      Scopes:
+      - ScopeDescription: scope_description
+        ScopeName: scope_name
+      UserPoolId:
+        Ref: CognitoAuthorizerUserPool
+  CognitoAuthorizerUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain:
+        Fn::Sub: user-pool-domain-${AWS::AccountId}
+      UserPoolId:
+        Ref: CognitoAuthorizerUserPool
+Outputs:
+  HostedUi:
+    Description: Hosted UI
+    Value:
+      Fn::Sub: https://${CognitoAuthorizerUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${CognitoAuthorizerUserPoolClient}&response_type=token&scope=email+openid+profile&redirect_uri=${CognitoCallbackUrl}
+  CognitoUserPoolArn:
+    Description: Cognito User Pool ARN for reference in parent SAM app.
+    Value:
+      Fn::GetAtt:
+      - CognitoAuthorizerUserPool
+      - Arn

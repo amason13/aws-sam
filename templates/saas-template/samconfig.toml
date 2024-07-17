@@ -1,0 +1,10 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "saas-template"
+resolve_s3 = true
+s3_prefix = "saas-template"
+region = "eu-west-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
+parameter_overrides = "Email=\"ashmason1389@gmail.com\" CallbackUrl=\"http://localhost:3001/\" CompanyName=\"SaaS Company\""
+image_repositories = []
